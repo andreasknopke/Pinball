@@ -201,8 +201,11 @@ export class World {
       if (!hit) continue;
 
       const { nx, ny, px, py } = hit;
-      ball.p.x = px + nx * ball.r;
-      ball.p.y = py + ny * ball.r;
+      // Separate by the capsule's radius too (not just the ball's): otherwise
+      // the ball stays embedded in the flipper and gravity accumulates every
+      // substep, making it jitter in place at ever higher speed.
+      ball.p.x = px + nx * (f.r + ball.r);
+      ball.p.y = py + ny * (f.r + ball.r);
 
       // contact-point velocity of the rotating flipper: v = ω × r
       const rx = px - f.pivot.x, ry = py - f.pivot.y;

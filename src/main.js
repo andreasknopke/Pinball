@@ -14,7 +14,6 @@ import { Ball, BALL_R } from './physics.js';
    ============================================================ */
 
 const TILT = 0.115; // visual tilt of the playfield (rad)
-const TRAIL_N = 48; // trail history points per ball
 
 const dom = {
   score: document.getElementById('score'),
@@ -38,7 +37,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
+renderer.toneMappingExposure = 1.0;
 document.getElementById('app').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -50,7 +49,7 @@ camera.position.set(0.02, 0.78, 0.62);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.55, 0.7, 0.85));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.35, 0.6, 0.9));
 
 // ---------- lighting ----------
 scene.add(new THREE.HemisphereLight(0x334466, 0x0a0a12, 0.9));
@@ -62,9 +61,9 @@ key.shadow.camera.left = -0.5; key.shadow.camera.right = 0.5;
 key.shadow.camera.top = 0.7; key.shadow.camera.bottom = -0.3;
 key.shadow.camera.near = 0.5; key.shadow.camera.far = 4;
 scene.add(key);
-const neonCyan = new THREE.PointLight(0x00e5ff, 6, 1.6); neonCyan.position.set(-0.55, 0.55, -0.55);
-const neonMag = new THREE.PointLight(0xff2d95, 6, 1.6); neonMag.position.set(0.55, 0.5, -0.9);
-const neonAmb = new THREE.PointLight(0xffb300, 4, 1.4); neonAmb.position.set(0, 0.45, 0.35);
+const neonCyan = new THREE.PointLight(0x00e5ff, 2.0, 1.6); neonCyan.position.set(-0.55, 0.55, -0.55);
+const neonMag = new THREE.PointLight(0xff2d95, 2.0, 1.6); neonMag.position.set(0.55, 0.5, -0.9);
+const neonAmb = new THREE.PointLight(0xffb300, 1.4, 1.4); neonAmb.position.set(0, 0.45, 0.35);
 scene.add(neonCyan, neonMag, neonAmb);
 
 // ---------- board group ----------
@@ -116,7 +115,7 @@ function makeDeckTexture() {
   };
   glowLine([[-0.185, 0.62], [-0.185, 0.36], [-0.13, 0.24], [-0.13, 0.16]], '#00e5ff', 5); // left orbit
   glowLine([[0.185, 0.4], [0.185, 0.6], [0.12, 0.66], [0, 0.7], [-0.12, 0.66], [-0.16, 0.58]], '#ff2d95', 5); // loop
-  glowLine([[0.135, 0.34], [0.03, 0.575]], '#ffb300', 5); // ramp
+  glowLine([[0.1325, 0.34], [0.1236, 0.51]], '#ffb300', 5); // ramp
   glowLine([[-0.17, 0.13], [-0.05, 0.13]], '#00e5ff', 4); // left inlane
   glowLine([[0.17, 0.13], [0.05, 0.13]], '#ff2d95', 4); // right inlane
 
@@ -172,7 +171,7 @@ function makeDeckTexture() {
 
 // ---------- rails & slingshot rubbers from world geometry ----------
 {
-  const railMat = new THREE.MeshStandardMaterial({ color: 0xc8ccd8, roughness: 0.25, metalness: 0.9 });
+  const railMat = new THREE.MeshStandardMaterial({ color: 0xc8ccd8, roughness: 0.45, metalness: 0.6 });
   const slingMat = new THREE.MeshStandardMaterial({ color: 0xff5722, emissive: 0xff5722, emissiveIntensity: 0.5, roughness: 0.6 });
   for (const w of world.walls) {
     const L = Math.hypot(w.b.x - w.a.x, w.b.y - w.a.y);
@@ -182,7 +181,7 @@ function makeDeckTexture() {
     const m = new THREE.Mesh(geo, isSling ? slingMat : railMat);
     m.position.set((w.a.x + w.b.x) / 2, isSling ? 0.012 : 0.011, -(w.a.y + w.b.y) / 2);
     m.rotation.order = 'YXZ';
-    m.rotation.y = Math.atan2(-(w.b.y - w.a.y), w.b.x - w.a.x);
+    m.rotation.y = Math.atan2(w.b.x - w.a.x, -(w.b.y - w.a.y));
     m.rotation.x = Math.PI / 2; // cylinder axis Y -> along the wall in XZ
     m.castShadow = true;
     board.add(m);
@@ -225,7 +224,7 @@ function hAt(x, y) { return world.height ? world.height(x, y) : 0; }
     pts.push(new THREE.Vector3(0.182, hAt(0.182, y) + 0.016, -y));
   }
   for (let i = 0; i <= 24; i++) {
-    const a = (i / 24) * Math.PI; // 0 -> pi across the top
+    const a = Math.PI / 2 - (i / 24) * Math.PI; // right -> over the top -> left
     const x = 0.18 * Math.sin(a), y = 0.62 + 0.18 * Math.cos(a);
     pts.push(new THREE.Vector3(x, hAt(x, y) + 0.016, -y));
   }
@@ -244,8 +243,8 @@ function hAt(x, y) { return world.height ? world.height(x, y) : 0; }
   board.add(tube);
 }
 {
-  // ramp deck: ribbon from (0.135, 0.33) to (0.03, 0.575)
-  const ax = 0.135, ay = 0.33, bx = 0.03, by = 0.575;
+  // ramp deck: ribbon from (0.1325, 0.33) to (0.1236, 0.51)
+  const ax = 0.1325, ay = 0.33, bx = 0.1236, by = 0.51;
   const N = 28;
   const dx = bx - ax, dy = by - ay;
   const L = Math.hypot(dx, dy);
@@ -284,6 +283,7 @@ const flipperMeshes = [];
   for (const f of world.flippers) {
     const geo = new THREE.CapsuleGeometry(0.011, f.len - 0.022, 6, 16);
     geo.rotateZ(Math.PI / 2); // capsule axis Y -> X (rotation.y then orients it)
+    geo.translate(f.len / 2, 0, 0); // extends from the pivot instead of centered on it
     const m = new THREE.Mesh(geo, mat);
     m.position.set(f.pivot.x, 0.012, -f.pivot.y);
     m.rotation.order = 'YXZ';
@@ -312,8 +312,8 @@ const plunger = new THREE.Group();
   board.add(plunger);
 }
 
-// ---------- balls (physics + meshes + trails) ----------
-const ballMat = new THREE.MeshStandardMaterial({ color: 0xdfe6ee, roughness: 0.08, metalness: 1.0, envMapIntensity: 1.4 });
+// ---------- balls (physics + meshes) ----------
+const ballMat = new THREE.MeshStandardMaterial({ color: 0xdfe6ee, roughness: 0.22, metalness: 0.75, envMapIntensity: 0.8 });
 const ballGeo = new THREE.SphereGeometry(BALL_R, 24, 16);
 const balls = [];
 for (let i = 0; i < 3; i++) {
@@ -322,15 +322,6 @@ for (let i = 0; i < 3; i++) {
   b.mesh.castShadow = true;
   b.mesh.visible = false;
   board.add(b.mesh);
-
-  // glow trail: fixed-length polyline, newest point at the end
-  const trailGeo = new THREE.BufferGeometry();
-  trailGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRAIL_N * 3), 3));
-  const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.6 }));
-  trail.frustumCulled = false;
-  board.add(trail);
-  b.trailLine = trail;
-  b.hist = new Array(TRAIL_N * 3).fill(0);
   balls.push(b);
 }
 
@@ -418,18 +409,6 @@ function onEvent(ev) {
     return;
   }
 
-  if (ev.kind === 'loop' && !G.loopBonusUsed) {
-    G.loopBonusUsed = true;
-    const free = balls.find((b) => !b.active);
-    if (free) {
-      free.active = true;
-      free.p.set(0.182, 0.055);
-      free.v.set(0, 1.55); // auto-plunger kick for the multiball ball
-      free.hist.fill(0);
-      setMsg('MULTIBALL!');
-    }
-  }
-
   let pts = SCORES[ev.kind] ?? 0;
   if (pts > 0) {
     if (now - G.lastEventT > 2500) G.combo = 0; // combo window
@@ -450,9 +429,6 @@ function startBall() {
   for (const b of balls) {
     b.active = false;
     b.mesh.visible = false;
-    b.hist.fill(0);
-    b.trailLine.geometry.attributes.position.array.fill(0);
-    b.trailLine.geometry.attributes.position.needsUpdate = true;
   }
   const b = balls[0];
   b.active = true;
@@ -538,8 +514,7 @@ function setCam(name) {
   dom.camMode.textContent = name;
 }
 
-// ---------- stuck-ball search ----------
-const stuck = { t: 0 };
+// ---------- stuck-ball search (per-ball state lives on each Ball) ----------
 
 // ---------- main loop ----------
 const events = [];
@@ -569,30 +544,29 @@ function frame() {
       const h = hAt(b.p.x, b.p.y) + BALL_R;
       b.mesh.position.set(b.p.x, h, -b.p.y);
 
-      // trail history: keep last TRAIL_N positions (xyz triples)
-      const t = b.hist;
-      while (t.length >= TRAIL_N * 3) t.splice(0, 3);
-      t.push(b.mesh.position.x, b.mesh.position.y, b.mesh.position.z);
-      b.trailLine.geometry.attributes.position.array.set(t);
-      b.trailLine.geometry.attributes.position.needsUpdate = true;
-
-      if (b.speed() < 0.03) {
-        stuck.t += dt;
-        if (stuck.t > 1.2) {
+      // Wait-at-plunger balls (resting on the lane floor) must not be
+      // "un-stuck": they rest on purpose until the player fires. Anywhere else
+      // a ball that stops moving (low speed OR no displacement) is nudged.
+      const atPlunger = b.p.x > 0.165 && b.p.y < 0.08;
+      const dp = b._lastP ? b.p.distanceTo(b._lastP) : 1;
+      b._lastP = b.p.clone();
+      if (!atPlunger && (b.speed() < 0.03 || dp < 0.0002)) {
+        b._stuck = (b._stuck || 0) + dt;
+        if (b._stuck > 1.2) {
           // nudge: random kick so the ball never freezes
           const a = Math.random() * Math.PI * 2;
-          b.v.set(Math.cos(a) * 0.25, Math.sin(a) * 0.25);
+          b.v.set(Math.cos(a) * 0.45, Math.sin(a) * 0.45 - 0.25);
           setMsg('BALL SEARCH');
-          stuck.t = 0;
+          b._stuck = 0;
         }
-      } else stuck.t = 0;
+      } else b._stuck = 0;
     }
   }
 
   // flipper meshes follow the physics angle
   for (const { mesh, f } of flipperMeshes) {
     const tip = world.flipperTip(f);
-    mesh.rotation.y = Math.atan2(-(tip.y - f.pivot.y), tip.x - f.pivot.x);
+    mesh.rotation.y = Math.atan2(tip.y - f.pivot.y, tip.x - f.pivot.x);
   }
 
   // flashers decay (bumper tops glow on hit)
@@ -610,9 +584,9 @@ function frame() {
   camera.position.copy(camPos);
   camera.lookAt(camLook);
 
-  // neon lights drift
-  neonCyan.position.x = Math.sin(now * 0.0004) * 0.55;
-  neonMag.position.x = -Math.cos(now * 0.00035) * 0.55;
+  // neon lights drift (subtle, stays at the cabinet sides)
+  neonCyan.position.x = -0.55 + Math.sin(now * 0.0004) * 0.05;
+  neonMag.position.x = 0.55 - Math.cos(now * 0.00035) * 0.05;
 
   composer.render();
 
