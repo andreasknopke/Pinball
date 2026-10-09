@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>NEON PINBALL 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css"/>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="hud-top">
+      <div class="panel">
+        <div class="label">SCORE</div>
+        <div id="score">0</div>
+      </div>
+      <div class="panel center">
+        <div class="label">COMBO <span id="mult">x1</span></div>
+        <div id="comboBar"><div id="comboFill"></div></div>
+      </div>
+      <div class="panel right">
+        <div class="label">BALL <span id="ballNo">1</span>/3</div>
+        <div id="balls">● ● ●</div>
+      </div>
+    </div>
+    <div id="msg"></div>
+    <div class="hud-bottom">
+      <div class="panel">
+        <div class="label">LAUNCH — halte <b>LEER</b> zum Laden, loslassen = Feuer</div>
+        <div id="powerBar"><div id="powerFill"></div></div>
+      </div>
+      <div class="panel right">
+        <div class="label">Kamera: <span id="camMode">TV</span> · <span id="fps">60</span> FPS</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay">
+    <h1>NEON<br><span>PINBALL</span></h1>
+    <p class="sub">3D · Realistische Physik · Flipper · Slingshots · Orbit · Rampe</p>
+    <div id="stats"></div>
+    <button id="startBtn">START</button>
+    <div id="controls">
+      <div><b>A / L</b> oder <b>←/→</b> — Flipper links/rechts</div>
+      <div><b>LEER</b> halten — Plunger laden, loslassen = Abschuss</div>
+      <div><b>1/2/3</b> — Kamerawinkel · <b>R</b> — Neustart</div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
