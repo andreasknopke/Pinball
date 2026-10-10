@@ -113,11 +113,27 @@ function makeDeckTexture() {
     g.stroke();
     g.shadowBlur = 0;
   };
-  glowLine([[-0.185, 0.62], [-0.185, 0.36], [-0.13, 0.24], [-0.13, 0.16]], '#00e5ff', 5); // left orbit
+  glowLine([[-0.185, 0.62], [-0.185, 0.36], [-0.15, 0.28], [-0.15, 0.16]], '#00e5ff', 5); // left orbit
   glowLine([[0.185, 0.4], [0.185, 0.6], [0.12, 0.66], [0, 0.7], [-0.12, 0.66], [-0.16, 0.58]], '#ff2d95', 5); // loop
-  glowLine([[0.1325, 0.34], [0.1236, 0.51]], '#ffb300', 5); // ramp
-  glowLine([[-0.17, 0.13], [-0.05, 0.13]], '#00e5ff', 4); // left inlane
-  glowLine([[0.17, 0.13], [0.05, 0.13]], '#ff2d95', 4); // right inlane
+  glowLine([[0.148, 0.335], [0.135, 0.42], [0.1236, 0.51]], '#ffb300', 5); // Hyperspace chute
+  glowLine([[-0.17, 0.13], [-0.05, 0.13]], '#00e5ff', 4); // left return lane
+  glowLine([[0.17, 0.13], [0.05, 0.13]], '#ff2d95', 4); // right return lane
+  // the Black Hole: a spiral swirl decal at the playfield centre
+  g.save();
+  g.translate(sx(0), sy(0.475));
+  g.strokeStyle = 'rgba(122,43,255,0.75)';
+  g.lineWidth = 3;
+  g.shadowColor = '#7a2bff';
+  g.shadowBlur = 22;
+  g.beginPath();
+  for (let i = 0; i <= 90; i++) {
+    const a = (i / 90) * Math.PI * 3.4;
+    const r = 4 + (i / 90) * 26;
+    const px = Math.cos(a) * r, py = -Math.sin(a) * r;
+    if (i === 0) g.moveTo(px, py); else g.lineTo(px, py);
+  }
+  g.stroke();
+  g.restore();
 
   g.save();
   g.translate(W / 2, H * 0.42);
@@ -125,10 +141,10 @@ function makeDeckTexture() {
   g.font = `800 ${Math.round(W * 0.11)}px Orbitron, sans-serif`;
   g.fillStyle = 'rgba(255,45,149,0.5)';
   g.shadowColor = '#ff2d95'; g.shadowBlur = 24;
-  g.fillText('NEON', 0, 0);
+  g.fillText('BLACK', 0, 0);
   g.fillStyle = 'rgba(0,229,255,0.5)';
   g.shadowColor = '#00e5ff';
-  g.fillText('PINBALL', 0, Math.round(W * 0.13));
+  g.fillText('HOLE', 0, Math.round(W * 0.13));
   g.restore();
 
   const tex = new THREE.CanvasTexture(c);
@@ -209,6 +225,50 @@ function makeDeckTexture() {
       skirt.position.set(c.c.x, 0.006, -c.c.y);
       board.add(skirt);
       c.flashMesh = m; // flash-on-hit glow in the frame loop
+    }
+  }
+}
+
+// ---------- drop targets (fall flat when knocked down) ----------
+{
+  const tgtMat = new THREE.MeshStandardMaterial({ color: 0xf2f2ff, emissive: 0x00e5ff, emissiveIntensity: 0.3, roughness: 0.35, metalness: 0.3 });
+  for (const t of world.targets) {
+    const L = Math.hypot(t.b.x - t.a.x, t.b.y - t.a.y);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(L, 0.012, 0.004), tgtMat.clone());
+    m.position.set((t.a.x + t.b.x) / 2, 0.01, -(t.a.y + t.b.y) / 2);
+    // board-space segment direction (dx,dy) → rotate the box's long axis onto it
+    m.rotation.y = Math.atan2(t.b.y - t.a.y, t.b.x - t.a.x);
+    m.castShadow = true;
+    board.add(m);
+    t.mesh = m;
+  }
+}
+
+// ---------- cups: Black Hole, Gravity Well, Escape Chute ----------
+{
+  const cupMat = new THREE.MeshStandardMaterial({ color: 0x020208, roughness: 0.9 });
+  const lipMat = new THREE.MeshBasicMaterial({ color: 0x7a2bff, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+  for (const hl of world.holes) {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(hl.r * 0.72, hl.r * 1.25, 24), lipMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(hl.c.x, 0.004, -hl.c.y);
+    board.add(ring);
+    const cup = new THREE.Mesh(new THREE.CircleGeometry(hl.r * 0.72, 24), cupMat);
+    cup.rotation.x = -Math.PI / 2;
+    cup.position.set(hl.c.x, 0.0035, -hl.c.y);
+    board.add(cup);
+  }
+}
+
+// ---------- Wormhole / Hyperspace mouths (glowing ring pairs) ----------
+{
+  const mouthMat = new THREE.MeshBasicMaterial({ color: 0xff2d95, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+  for (const p of world.portals) {
+    for (const [x, y] of [[p.a.x, p.a.y], [p.b.x, p.b.y]]) {
+      const ring = new THREE.Mesh(new THREE.RingGeometry(p.r * 0.9, p.r * 1.5, 24), mouthMat.clone());
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(x, 0.004, -y);
+      board.add(ring);
     }
   }
 }
@@ -383,7 +443,18 @@ const G = {
   loopBonusUsed: false, // multiball: one extra ball per loop pass
 };
 
-const SCORES = { wall: 10, post: 10, bumper: 150, sling: 120, orbit: 500, loop: 1000, ramp: 750, inlane: 250 };
+const SCORES = {
+  wall: 10, post: 10, bumper: 150, sling: 120, rebound: 200,
+  orbitL: 500, loop: 1000, ramp: 750, inlane: 250, inlaneL: 250, inlaneR: 250,
+  target: 75, hole: 400, portal: 600,
+};
+
+// Target banks: completing every target of a bank lights it and pays a bonus.
+const BANKS = {
+  fuel: 'FUEL TARGETS', mission: 'MISSION TARGETS', medal: 'MEDAL TARGETS',
+  warp: 'SPACE WARP TARGETS',
+};
+const BANK_BONUS = 2500;
 
 function fmt(n) { return n.toLocaleString('de-DE'); }
 function setMsg(text, ms = 1400) {
@@ -400,13 +471,39 @@ function updateHud() {
   dom.balls.textContent = '\u25CF '.repeat(live).trim() || '\u2014';
 }
 
+function spawnExtra(x, y) {
+  const b = balls.find((bl) => !bl.active);
+  if (!b) return false;
+  b.active = true;
+  b.mesh.visible = true;
+  b.p.set(x, y);
+  b.v.set((Math.random() - 0.5) * 0.8, -0.4 - Math.random() * 0.3);
+  b._stuck = 0;
+  b._lastP = null;
+  updateHud();
+  return true;
+}
+
 function onEvent(ev) {
   const now = performance.now();
-  if (ev.kind === 'drain') {
+  // drain (bottom edge) and pure-drain cups (Escape Chute) cost the ball
+  if (ev.kind === 'drain' || (ev.kind === 'hole' && ev.swallow)) {
     audio.drain();
     G.combo = 0; G.mult = 1;
     if (balls.filter((b) => b.active).length === 0) endBall();
     return;
+  }
+
+  // a completed target bank pays a bonus, pops back up and starts multiball
+  if (ev.kind === 'target' && !ev.soft && ev.group && BANKS[ev.group]) {
+    const bank = world.targets.filter((t) => t.group === ev.group);
+    if (bank.every((t) => t.down)) {
+      world.resetBank(ev.group);
+      G.score += BANK_BONUS * G.mult;
+      audio.bumper();
+      if (spawnExtra(0, 0.30)) setMsg('MULTIBALL — BANK GESCHAFFT', 1800);
+      else setMsg(`${BANKS[ev.group]} +${fmt(BANK_BONUS * G.mult)}`, 1800);
+    }
   }
 
   let pts = SCORES[ev.kind] ?? 0;
@@ -417,8 +514,8 @@ function onEvent(ev) {
     G.mult = Math.min(5, 1 + Math.floor(G.combo / 5));
     G.score += pts * G.mult;
     if (ev.kind === 'bumper') audio.bumper();
-    else if (ev.kind === 'sling') audio.sling();
-    else if (ev.kind === 'loop' || ev.kind === 'orbit' || ev.kind === 'ramp') audio.clack(1.2);
+    else if (ev.kind === 'sling' || ev.kind === 'rebound') audio.sling();
+    else if (ev.kind === 'loop' || ev.kind === 'orbit' || ev.kind === 'ramp' || ev.kind === 'portal' || ev.kind === 'hole') audio.clack(1.2);
     else audio.clack(0.6);
     if (pts >= 500) setMsg(`${ev.kind.toUpperCase()} +${pts * G.mult}`);
   }
@@ -540,7 +637,10 @@ function frame() {
 
     // ball visuals + stuck search
     for (const b of balls) {
-      if (!b.active) continue;
+      if (!b.active) {
+        if (b.mesh.visible) b.mesh.visible = false; // swallowed / drained
+        continue;
+      }
       const h = hAt(b.p.x, b.p.y) + BALL_R;
       b.mesh.position.set(b.p.x, h, -b.p.y);
 

@@ -1,0 +1,23 @@
+{
+  "name": "pinball",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andreasknopke/Pinball.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/andreasknopke/Pinball/issues"
+  },
+  "homepage": "https://github.com/andreasknopke/Pinball#readme",
+  "dependencies": {
+    "three": "^0.160.0"
+  }
+}
