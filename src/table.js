@@ -124,11 +124,12 @@ export function buildWorld() {
   w.hole(-0.183, 0.335, 0.012, { group: 'escape' });
 
   // ---------- guard posts / guides ----------
-  // Triangular wedge beside each flipper: hypotenuse faces the playfield and
-  // rolls the ball down onto the flipper; open toward the flipper so no
-  // shelf traps the ball.
-  w.wall(0.165, 0.205, 0.135, 0.150, { group: 'post', e: 0.55 });  // right guide
-  w.wall(-0.165, 0.205, -0.135, 0.150, { group: 'post', e: 0.55 }); // left guide
+  // Full-length diagonal guides beside each flipper (as in the reference
+  // build): hypotenuse faces the playfield, and the run reaches down to the
+  // flipper pivot so no gap is left beside the flipper for a ball to slip
+  // through — everything rolling down these lanes lands on the flipper.
+  w.wall(0.165, 0.205, 0.075, 0.128, { group: 'post', e: 0.55 });   // right guide
+  w.wall(-0.165, 0.205, -0.075, 0.128, { group: 'post', e: 0.55 }); // left guide
 
   // ---------- CENTER POST (between the flippers) ----------
   w.circle(0.0, 0.20, 0.008, { group: 'post', e: 0.55 });
